@@ -5,7 +5,7 @@ CC = gcc
      
 all: theboysUI
 
-theboysUI: theboysUI.o conjunto.o  lef.o fila.o movement.o
+theboysUI: theboysUI.o conjunto.o lef.o fila.o movement.o
 	$(CC) -o theboysUI theboysUI.o conjunto.o lef.o fila.o movement.o $(LDFLAGS)
 
 conjunto.o: conjunto.c

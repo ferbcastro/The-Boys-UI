@@ -236,7 +236,7 @@ void movimentaHeroi (struct coordenadas posDest, struct coordenadas posOrigem, W
                 tela[i + 1][j].pai.col = j;
                 continue;
             }
-            else if (!tela[i + 1][j].vista && grid[i + 1][j])
+            else if (!tela[i + 1][j].vista && grid[i + 1][j] && grid[i + 1][j + 1])
             {
                 cTemp.col = j;
                 cTemp.lin = i + 1;
@@ -264,7 +264,7 @@ void movimentaHeroi (struct coordenadas posDest, struct coordenadas posOrigem, W
                 tela[i - 1][j].pai.col = j;
                 continue;
             }
-            else if (!tela[i - 1][j].vista && grid[i - 1][j])
+            else if (!tela[i - 1][j].vista && grid[i - 1][j] && grid[i - 1][j + 1])
             {
                 cTemp.col = j;
                 cTemp.lin = i - 1;
@@ -292,7 +292,7 @@ void movimentaHeroi (struct coordenadas posDest, struct coordenadas posOrigem, W
                 tela[i][j + 1].pai.col = j;
                 continue;
             }
-            else if (!tela[i][j + 1].vista && grid[i][j + 1])
+            else if (!tela[i][j + 1].vista && grid[i][j + 1] && grid[i][j + 2])
             {
                 cTemp.col = j + 1;
                 cTemp.lin = i;

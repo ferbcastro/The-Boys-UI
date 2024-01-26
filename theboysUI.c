@@ -14,16 +14,16 @@
 #include "movement.h"
 
 #define N_HABILIDADES 10
-#define N_HEROIS N_HABILIDADES * 5
+#define N_HEROIS N_HABILIDADES * 4
 #define N_BASES 8
 #define T_INICIO 0
 #define T_FIM_DO_MUNDO 100
 #define T_MIN_CHEGADA_H 0
-#define T_MAX_CHEGADA_H 1
-#define N_MISSOES T_FIM_DO_MUNDO / 10
+#define T_MAX_CHEGADA_H 0
+#define N_MISSOES T_FIM_DO_MUNDO / 5
 #define MIN_HABILIDADES_H 1
 #define MAX_HABILIDADES_H 3
-#define MIN_VELOCIDADE_H 1
+#define MIN_VELOCIDADE_H 2
 #define MAX_VELOCIDADE_H 5
 #define MIN_PACIENCIA_H 0
 #define MAX_PACIENCIA_H 5
@@ -213,7 +213,7 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos, WINDOW *j)
      * o evento que termina a simulacao */
     insere_lef (eventos, cria_evento (T_FIM_DO_MUNDO, 9, 0, 0));
 
-    /* cria e imprime as bases na janela */
+    /* cria e posiciona as bases na janela */
     posBases[0].col = 0.08 * COLS; posBases[0].lin = 0.13 * LINES; 
     posBases[1].col = 0.21 * COLS; posBases[1].lin = 0.32 * LINES;
     posBases[2].col = 0.31 * COLS; posBases[2].lin = 0.54 * LINES;
@@ -222,6 +222,7 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos, WINDOW *j)
     posBases[5].col = 0.66 * COLS; posBases[5].lin = 0.72 * LINES;
     posBases[6].col = 0.78 * COLS; posBases[6].lin = 0.54 * LINES;
     posBases[7].col = 0.89 * COLS; posBases[7].lin = 0.32 * LINES;
+
     for (i = 0; i < s->nBases; i++)
         s->bases[i] = criaBase (i, j, posBases[i]);
     wrefresh (j);
@@ -251,7 +252,7 @@ void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
     int b = eventoTemp->dado2;
     struct coordenadas *ptrPos;
 
-    napms (400);
+    napms (200);
 
     /* uma base qualquer eh sorteada como novo destino do heroi */
     insere_lef (e, cria_evento (s->relogio, 8, h, aleat (0, s->nBases - 1)));
@@ -356,7 +357,7 @@ void avisaEentra (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e,
     int lMax = s->bases[b].lotacaoMax;
     struct coordenadas *ptrPos;
 
-    napms (400);
+    napms (200);
 
     /* porteiro libera entrada se houver vaga
      * na base e heroi(s) esperando na fila */
@@ -404,7 +405,7 @@ void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_
     /* uma nova base destino eh sorteada para heroi e o 
      * porteiro avisado de que ha mais uma vaga na base */
     insere_lef (e, cria_evento (t, 8, h, aleat (0, simulacao->nBases - 1)));
-    insere_lef (e, cria_evento (t, 5, 0, b));
+    // insere_lef (e, cria_evento (t, 5, 0, b));
     /* posiciona a direita da base */
     simulacao->herois[h].posicao.col = simulacao->bases[b].local.col + 3;
     simulacao->herois[h].posicao.lin = simulacao->bases[b].local.lin;
@@ -414,7 +415,7 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WIND
 {
     int dists[s->nBases];
     int j, menorPos, hId, achou, l, c;
-    int t = s->relogio, mId = eventoTemp->dado1;
+    int mId = eventoTemp->dado1;
     struct conjunto *aux, *habilidadesB;
     int ch;
     WINDOW *janelaSalva = newwin (LINES, COLS, 0, 0);
@@ -471,7 +472,8 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WIND
     {
         mvwprintw (*janela, LINES / 2, (COLS / 2) - 13, "MISSAO %d CUMPRIDA POR BASE %d", mId, menorPos);
         wrefresh (*janela);
-        napms(500);
+        napms(1000);
+        delwin (*janela);
         *janela = janelaSalva;
         wrefresh (*janela);
 
@@ -487,11 +489,13 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WIND
     
     mvwprintw (*janela, LINES / 2, (COLS / 2) - 11, "MISSAO %d IMPOSSIVEL", mId);
     wrefresh (*janela);
-    napms(500);
+    napms(1000);
+    delwin (*janela);
     *janela = janelaSalva;
     wrefresh (*janela);
-    /* se missao seja impossivel, essa eh reagendada em 24h */
-    insere_lef (e, cria_evento (t + 1440, 2, mId, 0));
+    
+    /* se missao for impossivel, essa eh reagendada em  */
+    insere_lef (e, cria_evento (s->relogio + 10, 2, mId, 0));
     ++s->missoes[mId].nAgendamentos;
 }
 

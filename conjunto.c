@@ -12,7 +12,7 @@ struct conjunto *cria_cjt (int max)
     /* retorna NULL caso alocacao de novoCjt 
      * ou de vet nao foi bem sucedida */
     novoCjt = malloc (sizeof(struct conjunto));
-    vet = malloc (max*sizeof(int));
+    vet = malloc (max * sizeof(int));
     if (!novoCjt || !vet)
         return NULL;
 
