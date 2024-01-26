@@ -24,6 +24,6 @@ theboysUI.o: theboysUI.c
 	$(CC) -c $(CFLAGS) theboysUI.c
 
 clean:
-	rm -f *.o theboysU 
+	rm -f *.o theboysUI 
 
 
