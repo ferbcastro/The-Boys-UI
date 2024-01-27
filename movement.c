@@ -56,7 +56,7 @@ int push_cjt (conjuntoP *c, par p)
     int i, ini, fim, meio;
     double f = p.first;
 
-    if (!c)
+    if (!c || !c->v)
         return 0;
 
     ini = 0;

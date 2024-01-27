@@ -17,25 +17,23 @@
 #define N_HEROIS N_HABILIDADES * 4
 #define N_BASES 8
 #define T_INICIO 0
-#define T_FIM_DO_MUNDO 100
+#define T_FIM_DO_MUNDO 10
 #define T_MIN_CHEGADA_H 0
 #define T_MAX_CHEGADA_H 0
-#define N_MISSOES T_FIM_DO_MUNDO / 5
+#define N_MISSOES T_FIM_DO_MUNDO 
 #define MIN_HABILIDADES_H 1
 #define MAX_HABILIDADES_H 3
 #define MIN_VELOCIDADE_H 2
 #define MAX_VELOCIDADE_H 5
 #define MIN_PACIENCIA_H 0
 #define MAX_PACIENCIA_H 5
-#define MIN_HABILIDADES_M 6
-#define MAX_HABILIDADES_M 10
+#define MIN_HABILIDADES_M 2
+#define MAX_HABILIDADES_M 6
 #define MIN_HEROIS_B 3
 #define MAX_HEROIS_B 10
 
 #define MIN_X 2
 #define MIN_Y 2
-#define MAX_X COLS - 2
-#define MAX_Y LINES - 2
 #define MAIOR_DIST 180
 
 /*
@@ -113,25 +111,13 @@ int achaMenorPosVet (int vet[], int tam)
     return menorPos;
 }
 
-int achaMenorPosVetFloat (float vet[], int tam)
-{
-    int i, menorPos;
-
-    menorPos = 0;
-    for (i = 1; i < tam; i++)
-        if (vet[menorPos] > vet[i])
-            menorPos = i;
-
-    return menorPos;
-}
-
 /* sorteia 'y' da base e retorna 0 se alguma 
  * base ja tem o mesmo 'y' e 1 caso contrario */
 int ajustaY (struct mundo *s, struct base *b, int num)
 {
     int i = 0, verifica = 1;
 
-    b->local.lin = aleat (MIN_Y, MAX_Y);
+    b->local.lin = aleat (MIN_Y, LINES - 2);
     while (verifica && i < num)
     {
         verifica = (s->bases[i].local.lin != b->local.lin);
@@ -158,7 +144,7 @@ struct heroi criaHeroi (int id)
     return h;
 }
 
-struct base criaBase (int id, WINDOW *j, struct coordenadas pos)
+struct base criaBase (int id, struct coordenadas pos, WINDOW *j)
 {
     struct base b;
 
@@ -190,8 +176,8 @@ struct missao criaMissao (int id)
     m.id = id;
     m.nAgendamentos = 1;
     m.resolvida = 0;
-    m.local.col = aleat (MIN_X, MAX_X);
-    m.local.lin = aleat (MIN_Y, MAX_Y);
+    m.local.col = aleat (MIN_X, COLS - 2);
+    m.local.lin = aleat (MIN_Y, LINES - 2);
     m.habilidades = cria_cjt (aleat (MIN_HABILIDADES_M, MAX_HABILIDADES_M));
     while (insere_cjt (m.habilidades, aleat (0, N_HABILIDADES - 1)));
 
@@ -224,7 +210,7 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos, WINDOW *j)
     posBases[7].col = 0.89 * COLS; posBases[7].lin = 0.32 * LINES;
 
     for (i = 0; i < s->nBases; i++)
-        s->bases[i] = criaBase (i, j, posBases[i]);
+        s->bases[i] = criaBase (i, posBases[i], j);
     wrefresh (j);
 
     /* cria os herois e sorteia o tempo de chegada 
@@ -241,7 +227,7 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos, WINDOW *j)
     for (i = 0; i < s->nMissoes; i++)
     {
         s->missoes[i] = criaMissao (i);
-        insere_lef (eventos, cria_evento (aleat (T_INICIO, T_FIM_DO_MUNDO), 2, i, 0));
+        insere_lef (eventos, cria_evento (i, 2, i, 0));
     }
 }
 
@@ -255,7 +241,7 @@ void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
     napms (200);
 
     /* uma base qualquer eh sorteada como novo destino do heroi */
-    insere_lef (e, cria_evento (s->relogio, 8, h, aleat (0, s->nBases - 1)));
+    insere_lef (e, cria_evento (s->relogio + aleat(1, 5), 8, h, aleat (0, s->nBases - 1)));
 
     mvwprintw (j, s->herois[h].posicao.lin, s->herois[h].posicao.col, "  ");
     wrefresh (j);
@@ -275,7 +261,7 @@ void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
             mvwprintw (j, ptrPos->lin, ptrPos->col, "  ");
             mvwprintw (j, --ptrPos->lin, ptrPos->col, "%d", h);
             wrefresh (j);
-            napms (10);
+            napms (50);
         }
 
         i++;
@@ -404,8 +390,7 @@ void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_
 
     /* uma nova base destino eh sorteada para heroi e o 
      * porteiro avisado de que ha mais uma vaga na base */
-    insere_lef (e, cria_evento (t, 8, h, aleat (0, simulacao->nBases - 1)));
-    // insere_lef (e, cria_evento (t, 5, 0, b));
+    insere_lef (e, cria_evento (t + aleat(1, 5), 8, h, aleat (0, simulacao->nBases - 1)));
     /* posiciona a direita da base */
     simulacao->herois[h].posicao.col = simulacao->bases[b].local.col + 3;
     simulacao->herois[h].posicao.lin = simulacao->bases[b].local.lin;
@@ -422,9 +407,12 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WIND
 
     ch = mvwinch (*janela, s->missoes[mId].local.lin, s->missoes[mId].local.col);
     
-    mvwaddch (*janela, s->missoes[mId].local.lin, s->missoes[mId].local.col, '*');
+    wattron (*janela, A_BOLD);
+    mvwaddch (*janela, s->missoes[mId].local.lin, s->missoes[mId].local.col, 'M');
     wrefresh (*janela);
-    napms (200);
+    napms (700);
+
+    wattroff (*janela, A_BOLD);
     mvwaddch (*janela, s->missoes[mId].local.lin, s->missoes[mId].local.col, ch);
     wrefresh (*janela);
 
@@ -470,12 +458,7 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WIND
     }
     if (achou)
     {
-        mvwprintw (*janela, LINES / 2, (COLS / 2) - 13, "MISSAO %d CUMPRIDA POR BASE %d", mId, menorPos);
-        wrefresh (*janela);
-        napms(1000);
-        delwin (*janela);
-        *janela = janelaSalva;
-        wrefresh (*janela);
+        mvwprintw (*janela, LINES / 2, (COLS / 2) - 13, "MISSAO %d CUMPRIDA POR BASE %c", mId, (char)(menorPos + 65));
 
         /* incrementa em 1 a experiencia dos herois que executaram a missao */
         inicia_iterador_cjt (s->bases[menorPos].presentes);
@@ -484,28 +467,38 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WIND
 
         ++s->nMissoesResolvidas;
         s->missoes[mId].resolvida = 1;
-        return;
+    }
+    else
+    {
+        mvwprintw (*janela, LINES / 2, (COLS / 2) - 11, "MISSAO %d IMPOSSIVEL", mId);
+        insere_lef (e, cria_evento (s->relogio + aleat (5, 10), 2, mId, 0));
+        ++s->missoes[mId].nAgendamentos;
     }
     
-    mvwprintw (*janela, LINES / 2, (COLS / 2) - 11, "MISSAO %d IMPOSSIVEL", mId);
     wrefresh (*janela);
-    napms(1000);
+    napms(1200);
     delwin (*janela);
     *janela = janelaSalva;
     wrefresh (*janela);
-    
-    /* se missao for impossivel, essa eh reagendada em  */
-    insere_lef (e, cria_evento (s->relogio + 10, 2, mId, 0));
-    ++s->missoes[mId].nAgendamentos;
 }
 
 void fimSimulacao (struct mundo *s, struct evento_t **eventoTemp, struct lef_t **e, WINDOW *j)
 {
     int i, somaAgendamentos = 0;
 
+    i = 4;
     werase (j);
-    mvwprintw (j, MAX_Y / 2, (MAX_X / 2) - 1, "FIM");
-    wrefresh (j);
+    box (j, 0, 0);
+    while (i--)
+    {
+        mvwprintw (j, LINES / 2, (COLS / 2) - 1, "FIM");
+        wrefresh (j);
+        napms (500);
+        
+        mvwprintw (j, LINES / 2, (COLS / 2) - 1, "   ");
+        wrefresh (j);
+        napms (500);
+    }
 
     /* abaixo toda a memoria alocada eh liberada */
     for (i = 0; i < s->nHerois; i++)
@@ -601,9 +594,8 @@ int main ()
     }
 
     fimSimulacao (&simulacao, &eventoTemp, &eventos, janela);
-
     delwin (janela);
-    endwin ();
+    endwin (); 
 
     return 0;    
 }
