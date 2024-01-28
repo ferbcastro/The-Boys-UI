@@ -17,13 +17,13 @@
 #define N_HEROIS N_HABILIDADES * 4
 #define N_BASES 8
 #define T_INICIO 0
-#define T_FIM_DO_MUNDO 10
+#define T_FIM_DO_MUNDO 5
 #define T_MIN_CHEGADA_H 0
 #define T_MAX_CHEGADA_H 0
 #define N_MISSOES T_FIM_DO_MUNDO 
 #define MIN_HABILIDADES_H 1
 #define MAX_HABILIDADES_H 3
-#define MIN_VELOCIDADE_H 2
+#define MIN_VELOCIDADE_H 3
 #define MAX_VELOCIDADE_H 5
 #define MIN_PACIENCIA_H 0
 #define MAX_PACIENCIA_H 5
@@ -35,13 +35,6 @@
 #define MIN_X 2
 #define MIN_Y 2
 #define MAIOR_DIST 180
-
-/*
-* CODIGO PARA CADA EVENTO: 
-* 
-* 1: CHEGA, 2: MISSAO, 3: ESPERA, 4: DESISTE,
-* 5: AVISA, 6: ENTRA, 7: SAI, 8: VIAJA, 9: FIM
-*/
 
 struct heroi
 {
@@ -231,80 +224,45 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos, WINDOW *j)
     }
 }
 
-void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
+void primeiroHeroiChega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
 {
-    int i;
-    int h = eventoTemp->dado1;
-    int b = eventoTemp->dado2;
-    struct coordenadas *ptrPos;
-
-    napms (200);
-
-    /* uma base qualquer eh sorteada como novo destino do heroi */
-    insere_lef (e, cria_evento (s->relogio + aleat(1, 5), 8, h, aleat (0, s->nBases - 1)));
-
-    mvwprintw (j, s->herois[h].posicao.lin, s->herois[h].posicao.col, "  ");
-    wrefresh (j);
-
-    /* posiciona a esquerda da base */
-    s->herois[h].posicao.col = s->bases[b].local.col - 4;
-    s->herois[h].posicao.lin = s->bases[b].local.lin;
-
-    i = 1;
-    h = retorna_elemento_fila (s->bases[b].filaEspera, i);
-        
-    while (h != -1)
-    {
-        ptrPos = &s->herois[h].posicao;
-        while ((int)(A_CHARTEXT & mvwinch (j, ptrPos->lin - 1, ptrPos->col)) == 32)
-        {
-            mvwprintw (j, ptrPos->lin, ptrPos->col, "  ");
-            mvwprintw (j, --ptrPos->lin, ptrPos->col, "%d", h);
-            wrefresh (j);
-            napms (50);
-        }
-
-        i++;
-        h = retorna_elemento_fila (s->bases[b].filaEspera, i);
-    }
-}
-
-int heroiChega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
-{
-    int h = eventoTemp->dado1;
-    int b = eventoTemp->dado2;
+    int h = eventoTemp->dado1, b = eventoTemp->dado2;
     int c = cardinalidade_cjt (s->bases[b].presentes);
     int p = s->herois[h].paciencia;
     int lMax = s->bases[b].lotacaoMax;
     struct fila *f = s->bases[b].filaEspera;
+    struct coordenadas *cAux = &s->herois[h].posicao;
 
-    /* atualiza a base do heroi ao chegar na base */
-    s->herois[h].base = b;
-
-    /* heroi espera na fila se essa estiver vazia e houver vagas na base 
-     * ou caso sua paciencia seja dez vezes maior que o tamanho da fila */
     if ((c < lMax && fila_vazia (f)) || p > fila_tamanho (f))
     {
-        /* o heroi eh adicionada a fila de espera 
-         * e o porteiro avisado de sua chegada */
+        cAux->lin = s->bases[b].local.lin + fila_tamanho(s->bases[b].filaEspera) + 2;
+        cAux->col = s->bases[b].local.col;
+        mvwprintw (j, cAux->lin, cAux->col, "%d", h);
+        wrefresh (j);
+        napms (50);
+
         enqueue (s->bases[b].filaEspera, h);
-        insere_lef (e, cria_evento (s->relogio, 5, 0, b));
-        return 1;
+        insere_lef (e, cria_evento (s->relogio, 5, h, b));
+        
+        return;
     }
-    
-    heroiDesiste (s, eventoTemp, e, j);
-    return 0;   
+
+    insere_lef (e, cria_evento (s->relogio, 4, h, b));
+
+    return;
 }
 
-void heroiViaja (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
+void viajaEchega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
 {
-    int vel, h = eventoTemp->dado1, b = eventoTemp->dado2;
+    int h = eventoTemp->dado1;
+    int b = eventoTemp->dado2;
+    int vel = s->herois[h].velocidade; 
+    int c = cardinalidade_cjt (s->bases[b].presentes);
+    int p = s->herois[h].paciencia;
+    int lMax = s->bases[b].lotacaoMax;
+    struct fila *f = s->bases[b].filaEspera;
     struct coordenadas posDest;
 
-    vel = s->herois[h].velocidade;
-
-    /* abaixo o evento heroiChega eh agendado com base na
-     * duracao calculada da viagem ate a base destino */
     posDest.col = s->bases[b].local.col;
     posDest.lin = s->bases[b].local.lin + fila_tamanho (s->bases[b].filaEspera) + 2;
 
@@ -314,36 +272,35 @@ void heroiViaja (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, 
 
     movimentaHeroi (posDest, s->herois[h].posicao, j, h, vel);
     s->herois[h].posicao = posDest;
-    
-    heroiChega (s, eventoTemp, e, j);
-}
+    s->herois[h].base = b;
 
-void primeiroHeroiChega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
-{
-    int h = eventoTemp->dado1, b = eventoTemp->dado2;
-    struct coordenadas *cAux = &s->herois[h].posicao;
-    
-    if (heroiChega (s, eventoTemp, e, j))
+    napms (200);
+
+    if ((c < lMax && fila_vazia (f)) || p > fila_tamanho (f))
     {
-        cAux->lin = s->bases[b].local.lin + fila_tamanho(s->bases[b].filaEspera) + 1;
-        cAux->col = s->bases[b].local.col;
-        mvwprintw (j, cAux->lin, cAux->col, "%d", h);
-        wrefresh (j);
+        /* adicionado a fila de espera e porteiro avisado de sua chegada */
+        insere_lef (e, cria_evento (s->relogio, 5, h, b));
+        enqueue (s->bases[b].filaEspera, h);
+
+        return;
     }
 
+    insere_lef (e, cria_evento (s->relogio, 4, h, b));
+    mvwprintw (j, s->herois[h].posicao.lin, s->herois[h].posicao.col, "  ");
+    wrefresh (j);
+    
     return;
 }
 
 void avisaEentra (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e, WINDOW *j)
 {
-    int i, h, tempo;
+    int i, tempo;
     int t = s->relogio;
+    int h = eventoTemp->dado1; 
     int b = eventoTemp->dado2;
     int c = cardinalidade_cjt (s->bases[b].presentes);
     int lMax = s->bases[b].lotacaoMax;
     struct coordenadas *ptrPos;
-
-    napms (200);
 
     /* porteiro libera entrada se houver vaga
      * na base e heroi(s) esperando na fila */
@@ -356,7 +313,7 @@ void avisaEentra (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e,
         insere_cjt (s->bases[b].presentes, h);
         c++;
 
-        tempo = t + 15 + s->herois[h].paciencia * aleat (1, 5);
+        tempo = t + s->herois[h].paciencia + 1;
         insere_lef (e, cria_evento (tempo, 7, h, b));
     }
 
@@ -377,6 +334,22 @@ void avisaEentra (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e,
         i++;
         h = retorna_elemento_fila (s->bases[b].filaEspera, i);
     }
+
+    if (i != 1)
+        napms (200);
+}
+
+void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
+{
+    int h = eventoTemp->dado1;
+    int b = eventoTemp->dado2;
+
+    /* uma base qualquer eh sorteada como novo destino do heroi */
+    insere_lef (e, cria_evento (s->relogio + aleat(1, 5), 1, h, aleat (0, s->nBases - 1)));
+
+    /* posiciona a esquerda da base */
+    s->herois[h].posicao.col = s->bases[b].local.col - 4;
+    s->herois[h].posicao.lin = s->bases[b].local.lin;
 }
 
 void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
@@ -390,7 +363,8 @@ void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_
 
     /* uma nova base destino eh sorteada para heroi e o 
      * porteiro avisado de que ha mais uma vaga na base */
-    insere_lef (e, cria_evento (t + aleat(1, 5), 8, h, aleat (0, simulacao->nBases - 1)));
+    insere_lef (e, cria_evento (t, 1, h, aleat (0, simulacao->nBases - 1)));
+    insere_lef (e, cria_evento (t, 5, h, b));
     /* posiciona a direita da base */
     simulacao->herois[h].posicao.col = simulacao->bases[b].local.col + 3;
     simulacao->herois[h].posicao.lin = simulacao->bases[b].local.lin;
@@ -489,6 +463,8 @@ void fimSimulacao (struct mundo *s, struct evento_t **eventoTemp, struct lef_t *
     i = 4;
     werase (j);
     box (j, 0, 0);
+    mvwprintw (j, (LINES / 2) + 2, (COLS / 2) - 10, "%d/%d MISSOES CUMPRIDAS", s->nMissoesResolvidas, s->nMissoes);
+    mvwprintw (j, (LINES / 2) + 4, (COLS / 2) - 6, "(%.2f%%), MEDIA", (float)(100*s->nMissoesResolvidas / s->nMissoes));
     while (i--)
     {
         mvwprintw (j, LINES / 2, (COLS / 2) - 1, "FIM");
@@ -560,7 +536,7 @@ int main ()
             switch (eventoTemp->tipo)
             {
                 case 1:
-                    heroiChega (&simulacao, eventoTemp, eventos, janela);
+                    viajaEchega (&simulacao, eventoTemp, eventos, janela);
                     break;
                 case 2:
                     missao (&simulacao, eventoTemp, eventos, &janela);
@@ -569,7 +545,7 @@ int main ()
                     primeiroHeroiChega (&simulacao, eventoTemp, eventos, janela);
                     break;
                 case 4:
-                    heroiDesiste (&simulacao, eventoTemp, eventos, janela);
+                    heroiDesiste (&simulacao, eventoTemp, eventos);
                     break;
                 case 5:
                     avisaEentra (&simulacao, eventoTemp, eventos, janela);
@@ -577,9 +553,6 @@ int main ()
                 case 7:
                     heroiSai (&simulacao, eventoTemp, eventos);
                     break;
-                case 8:
-                    heroiViaja (&simulacao, eventoTemp, eventos, janela);
-                    break; 
                 default:
                     return -1; 
             }
