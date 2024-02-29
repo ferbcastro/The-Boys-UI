@@ -188,6 +188,14 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos, WINDOW *j)
     s->nMissoes = N_MISSOES;
     s->nMissoesResolvidas = s->relogio = T_INICIO;
 
+    mvwprintw (j, LINES / 2, (COLS / 2) - 4, "THE BOYS");
+    wrefresh (j);
+    napms (1000);
+
+    werase (j);
+    box (j, 0, 0);
+    wrefresh (j);
+    
     /* insere na lef no tempo T_FIM_DO_MUNDO 
      * o evento que termina a simulacao */
     insere_lef (eventos, cria_evento (T_FIM_DO_MUNDO, 9, 0, 0));
